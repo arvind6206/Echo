@@ -6,7 +6,7 @@ const rooms = new Map<string, Set<WebSocket>>()
 const socketRooms = new Map<WebSocket, string>();
 
 wss.on('connection', (socket) => {
-  console.log('user coonected')
+  console.log('user connected')
   
   socket.on('message', (message) => {
     const data = JSON.parse(message.toString())
@@ -16,7 +16,7 @@ wss.on('connection', (socket) => {
 
       //check if this roomId already present in rooms or not
       if(!rooms.has(roomId)){
-        //if not then creates import PropTypes from 'prop-types'
+        //if not then creates a new room
         rooms.set(roomId, new Set())
       }
 

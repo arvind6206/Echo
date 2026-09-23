@@ -2,57 +2,56 @@ import { useEffect, useRef, useState } from "react";
 
 const WS_URL = "ws://localhost:8080";
 
-interface ChatMessage{
-    id: string,
-    message: string
+interface ChatMessage {
+    id: string;
+    message: string;
 }
 
-export default function useWebSocket(){
+export default function useWebSocket() {
     const socketRef = useRef<WebSocket | null>(null)
 
-    const [isConnected, setIsConnected] = useState(false)
-    const [messages, setMessages] = useState<ChatMessage[]>([])
+    const [isConnected, setIsConnected] = useState(false);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
 
     useEffect(() => {
-        const socket = new WebSocket(WS_URL)
+        const socket = new WebSocket(WS_URL);
 
-        
-        socketRef.current = socket
+        socketRef.current = socket;
 
         socket.onopen = () => {
-            console.log("WebSocket connectd")
+            console.log("WebSocket connected")
             setIsConnected(true)
         }
 
         socket.onmessage = (event) => {
             try {
-                const data = JSON.parse(event.data)
+                const data = JSON.parse(event.data);
 
                 if(data.type === 'chat'){
                     setMessages((prev) => [...prev, {
                         id: crypto.randomUUID(),
                         message: data.message,
-                    }])
+                    }]);
                 }
             } catch (error) {
-                console.error("Invalid message:", error)
+                console.error("Invalid message:", error);
             }
-        }
+        };
         
         socket.onclose = () => {
-            console.log("WebSocket disconnectd")
+            console.log("WebSocket disconnected")
             setIsConnected(false)
         }
 
         socket.onerror = (error) => {
-            console.error("WebSocket error:", error)
-        }
+            console.error("WebSocket error:", error);
+        };
 
         return () => {
-            socket.close()
-        }
+            socket.close();
+        };
 
-    }, [])
+    }, []);
 
     const joinRoom = (roomId: string) => {
         if(!socketRef.current) return;
@@ -66,10 +65,10 @@ export default function useWebSocket(){
                 type: "join",
                 roomId
             })
-        )
-    }
+        );
+    };
 
-    const sendMEssage = (message: string) => {
+    const sendMessage = (message: string) => {
         if(!socketRef.current) return;
 
         if(socketRef.current.readyState !== WebSocket.OPEN){
@@ -81,7 +80,7 @@ export default function useWebSocket(){
                 type: "chat",
                 message,
             })
-        )
-    }
-    return {isConnected, messages, joinRoom, sendMEssage}
+        );
+    };
+    return {isConnected, messages, joinRoom, sendMessage};
 }
