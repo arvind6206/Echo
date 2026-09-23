@@ -1,41 +1,54 @@
-import { WebSocketServer, WebSocket } from "ws";
+import {WebSocketServer, WebSocket} from 'ws'
 
-const wss = new WebSocketServer({ port: 8080 });
+const wss = new WebSocketServer({port: 8080})
 
-interface User {
-  socket: WebSocket;
-  room: string;
-}
+const rooms = new Map<string, Set<WebSocket>>()
+const socketRooms = new Map<WebSocket, string>();
 
-let allSockets: User[] = [];
+wss.on('connection', (socket) => {
+  console.log('user coonected')
+  
+  socket.on('message', (message) => {
+    const data = JSON.parse(message.toString())
 
-wss.on("connection", (socket) => {
-  console.log("user connected #");
+    if(data.type === 'join'){
+      const roomId = data.roomId
 
-  socket.on("message", (message) => {
-    const parsedMessage = JSON.parse(message as unknown as string);
-    if (parsedMessage.type === "join") {
-      allSockets.push({
-        socket,
-        room: parsedMessage.payload.roomId,
-      });
-    }
-
-    if (parsedMessage.type === "chat") {
-      // const currentUserRoom = allSockets.find((x) => x.socket === socket).room
-
-      let currentUserRoom = null
-      for(let i = 0; i < allSockets.length; i++){
-        if(allSockets[i]!.socket === socket){
-          currentUserRoom = allSockets[i]!.room
-        }
+      //check if this roomId already present in rooms or not
+      if(!rooms.has(roomId)){
+        //if not then creates import PropTypes from 'prop-types'
+        rooms.set(roomId, new Set())
       }
 
-      for(let i = 0; i < allSockets.length; i++){
-        if(allSockets[i]!.room === currentUserRoom){
-          allSockets[i]!.socket.send(parsedMessage.payload.message)
-        }
-      }
+      //it will tell who is inside the room for eg who is inside room 1
+      rooms.get(roomId)!.add(socket)
+
+      //and this line will do like which room does this soclet belong to
+      //eg socket 1 belong to room 1 like that
+      socketRooms.set(socket, roomId)
+
+      console.log(`User joined ${roomId}`)
     }
-  });
-});
+
+    if(data.type === 'chat'){
+      const roomId = socketRooms.get(socket)
+
+      if(!roomId){
+        return;
+      }
+
+      const room = rooms.get(roomId)
+      if(!room){
+        return;
+      }
+
+      room.forEach((client) => {
+        client.send(JSON.stringify({
+          type: "chat",
+          message: data.message
+        }))
+      })
+    }
+  })
+
+})
